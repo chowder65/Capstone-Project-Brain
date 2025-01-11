@@ -1,3 +1,5 @@
+using UserAPI.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
 
@@ -15,34 +17,45 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
+
+
+app.MapPost("/User/Create", async (User user) =>
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    var hashedPassword = user.HashPassword(user.Password);
+    user.Password = hashedPassword;
 
-app.MapGet("/weatherforecast", () =>
+    await user.CreateUser(user);
+    return Results.Ok("User created successfully.");
+});
+
+app.MapGet("/User/GetByUserName", async (string userName) =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
+    var user = new User();
+    var userDocument = await user.GetUser(userName);
 
+    return userDocument is not null ? Results.Ok(userDocument) : Results.NotFound("User not found.");
+});
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+app.MapPut("/User/UpdateUserName", async (int id, string newUserName) =>
 {
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+    var user = new User();
+    await user.UpdateUsername(id, newUserName);
+    return Results.Ok("Username updated successfully.");
+});
 
-app.MapPost("/User/create", () =>){
+app.MapDelete("/User/Delete", async (int id) =>
+{
+    var user = new User();
+    await user.DeleteUser(id);
+    return Results.Ok("User deleted successfully.");
+});
 
-}
+app.MapPost("/User/LogIn", async (string userName, string password) =>
+{
+    var user = new User();
+    var loginSuccess = await user.LogIn(userName, password);
+
+    return loginSuccess ? Results.Ok("Login successful.") : Results.Unauthorized();
+});
 
 app.Run();
