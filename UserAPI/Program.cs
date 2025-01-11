@@ -1,3 +1,4 @@
+using UserAPI.Controllers;
 using UserAPI.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,21 +18,23 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+UserController controller = new UserController();
+
 
 
 app.MapPost("/User/Create", async (User user) =>
 {
-    var hashedPassword = user.HashPassword(user.Password);
+    var hashedPassword = controller.HashPassword(user.Password);
     user.Password = hashedPassword;
 
-    await user.CreateUser(user);
+    await controller.CreateUser(user);
     return Results.Ok("User created successfully.");
 });
 
 app.MapGet("/User/GetByUserName", async (string userName) =>
 {
     var user = new User();
-    var userDocument = await user.GetUser(userName);
+    var userDocument = await controller.GetUser(userName);
 
     return userDocument is not null ? Results.Ok(userDocument) : Results.NotFound("User not found.");
 });
@@ -39,21 +42,21 @@ app.MapGet("/User/GetByUserName", async (string userName) =>
 app.MapPut("/User/UpdateUserName", async (int id, string newUserName) =>
 {
     var user = new User();
-    await user.UpdateUsername(id, newUserName);
+    await controller.UpdateUsername(id, newUserName);
     return Results.Ok("Username updated successfully.");
 });
 
 app.MapDelete("/User/Delete", async (int id) =>
 {
     var user = new User();
-    await user.DeleteUser(id);
+    await controller.DeleteUser(id);
     return Results.Ok("User deleted successfully.");
 });
 
 app.MapPost("/User/LogIn", async (string userName, string password) =>
 {
     var user = new User();
-    var loginSuccess = await user.LogIn(userName, password);
+    var loginSuccess = await controller.LogIn(userName, password);
 
     return loginSuccess ? Results.Ok("Login successful.") : Results.Unauthorized();
 });

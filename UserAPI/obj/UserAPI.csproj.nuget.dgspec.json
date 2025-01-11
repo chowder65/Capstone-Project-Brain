@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\mccul\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj": {}
+    "C:\\Users\\cmcculley\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj": {}
   },
   "projects": {
-    "C:\\Users\\mccul\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj": {
+    "C:\\Users\\cmcculley\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\mccul\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj",
+        "projectUniqueName": "C:\\Users\\cmcculley\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj",
         "projectName": "UserAPI",
-        "projectPath": "C:\\Users\\mccul\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj",
-        "packagesPath": "C:\\Users\\mccul\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\mccul\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\obj\\",
+        "projectPath": "C:\\Users\\cmcculley\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj",
+        "packagesPath": "C:\\Users\\cmcculley\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\cmcculley\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\mccul\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\cmcculley\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -43,6 +43,14 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "BCrypt": {
+              "target": "Package",
+              "version": "[1.0.0, )"
+            },
+            "BCrypt.Net-Next": {
+              "target": "Package",
+              "version": "[4.0.3, )"
+            },
             "Microsoft.AspNetCore.OpenApi": {
               "target": "Package",
               "version": "[8.0.8, )"
@@ -75,7 +83,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.401/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Users\\cmcculley\\.dotnet\\sdk\\8.0.404/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
