@@ -1,5 +1,10 @@
+using DotNetEnv;
 using UserAPI.Controllers;
 using UserAPI.Models;
+
+Env.Load();
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 

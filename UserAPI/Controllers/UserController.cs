@@ -9,7 +9,7 @@ namespace UserAPI.Controllers;
 public class UserController
 {
     
-    private static readonly string ConnectionString = "mongodb://localhost:27017/";
+    private static string ConnectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
     private static readonly MongoClient Client = new MongoClient(ConnectionString);
     private static readonly IMongoCollection<BsonDocument> collection =
         Client.GetDatabase("UserAPI").GetCollection<BsonDocument>("Users");
@@ -27,6 +27,7 @@ public class UserController
 
     public async Task<User?> GetUser(string userName)
     {
+        Console.WriteLine(ConnectionString);
         var filter = Builders<BsonDocument>.Filter.Eq("UserName", userName);
         var userDocument = await collection.Find(filter).FirstOrDefaultAsync();
 
