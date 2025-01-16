@@ -11,15 +11,15 @@ namespace UserAPI.Controllers;
 
 public class UserController
 {
-    private readonly IMongoCollection<BsonDocument> collection;
+    private readonly IMongoCollection<User> collection;
     private readonly JwtSettings jwtSettings;
 
     public UserController(JwtSettings jwtSettings)
     {
-        jwtSettings = jwtSettings;
+        this.jwtSettings = jwtSettings;
         var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
         var client = new MongoClient(connectionString);
-        collection = client.GetDatabase("UserAPI").GetCollection<BsonDocument>("Users");
+        collection = client.GetDatabase("UserAPI").GetCollection<User>("Users");
     }
 
     public string HashPassword(string password)
@@ -29,17 +29,14 @@ public class UserController
 
     public async Task CreateUser(User user)
     {
-        user.Id = await GetNextSequenceValue("UserId");
-
-        var bsonDocument = user.ToBsonDocument();
-        await collection.InsertOneAsync(bsonDocument);
+        user.Id = ObjectId.GenerateNewId();
+        await collection.InsertOneAsync(user);
     }
 
     public async Task<User?> GetUser(string userName)
     {
-        var filter = Builders<BsonDocument>.Filter.Eq("UserName", userName);
-        var userDocument = await collection.Find(filter).FirstOrDefaultAsync();
-        return userDocument != null ? BsonSerializer.Deserialize<User>(userDocument) : null;
+        var filter = Builders<User>.Filter.Eq("UserName", userName);
+        return await collection.Find(filter).FirstOrDefaultAsync();
     }
 
     public async Task<string?> LogIn(string userName, string password)
@@ -54,16 +51,18 @@ public class UserController
 
     public async Task<bool> ChangePassword(string id, string newPassword)
     {
-        var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(id));
+        var objectId = ObjectId.Parse(id);
+        var filter = Builders<User>.Filter.Eq(u => u.Id, objectId);
         var hashedPassword = HashPassword(newPassword);
-        var update = Builders<BsonDocument>.Update.Set("Password", hashedPassword);
+        var update = Builders<User>.Update.Set(u => u.Password, hashedPassword);
         var result = await collection.UpdateOneAsync(filter, update);
         return result.ModifiedCount > 0;
     }
 
     public async Task DeleteUser(string id)
     {
-        var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(id));
+        var objectId = ObjectId.Parse(id);
+        var filter = Builders<User>.Filter.Eq(u => u.Id, objectId);
         await collection.DeleteOneAsync(filter);
     }
 
@@ -76,7 +75,7 @@ public class UserController
         {
             Subject = new ClaimsIdentity(new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.UserName)
             }),
             Expires = DateTime.UtcNow.AddMinutes(jwtSettings.ExpirationInMinutes),
@@ -87,24 +86,5 @@ public class UserController
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
-    }
-    
-    public async Task<string> GetNextSequenceValue(string sequenceName)
-    {
-        var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
-        var client = new MongoClient(connectionString);
-        var counterCollection = client.GetDatabase("UserAPI").GetCollection<BsonDocument>("Counters");
-
-        var filter = Builders<BsonDocument>.Filter.Eq("_id", sequenceName);
-        var update = Builders<BsonDocument>.Update.Inc("sequence_value", 1);
-        var options = new FindOneAndUpdateOptions<BsonDocument>
-        {
-            ReturnDocument = ReturnDocument.After,
-            IsUpsert = true
-        };
-
-        var result = await counterCollection.FindOneAndUpdateAsync(filter, update, options);
-
-        return result["sequence_value"].AsString;
     }
 }

@@ -6068,19 +6068,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\cmcculley\\.nuget\\packages\\": {}
+    "C:\\Users\\mccul\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\cmcculley\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj",
+      "projectUniqueName": "C:\\Users\\mccul\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj",
       "projectName": "UserAPI",
-      "projectPath": "C:\\Users\\cmcculley\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj",
-      "packagesPath": "C:\\Users\\cmcculley\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\cmcculley\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\obj\\",
+      "projectPath": "C:\\Users\\mccul\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj",
+      "packagesPath": "C:\\Users\\mccul\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\mccul\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\cmcculley\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\mccul\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
@@ -6157,7 +6157,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Users\\cmcculley\\.dotnet\\sdk\\8.0.404/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.401/PortableRuntimeIdentifierGraph.json"
       }
     }
   },
