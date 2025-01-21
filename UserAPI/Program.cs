@@ -4,7 +4,6 @@ using UserAPI.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 Env.Load();
 
@@ -13,19 +12,18 @@ var builder = WebApplication.CreateBuilder(args);
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
 var key = Encoding.ASCII.GetBytes(jwtSettings.Secret);
 
-builder.Services.AddAuthentication("Bearer")
-    .AddJwtBearer("Bearer", options =>
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
     {
-        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
-            ValidAudience = builder.Configuration["JwtSettings:Audience"],
-            IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
-                System.Text.Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Secret"]))
+            ValidIssuer = jwtSettings.Issuer,
+            ValidAudience = jwtSettings.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(key)
         };
     });
 
@@ -48,7 +46,6 @@ app.UseAuthorization();
 
 UserController controller = new UserController(jwtSettings);
 
-// Endpoints
 app.MapPost("/User/Create", async (User user) =>
 {
     user.Password = controller.HashPassword(user.Password);
@@ -68,18 +65,42 @@ app.MapPost("/User/LogIn", async (string userName, string password) =>
     return token is not null ? Results.Ok(new { Token = token }) : Results.Unauthorized();
 });
 
-app.MapPut("/User/ChangePassword", async (string id, string password) =>
+app.MapPut("/User/ChangePassword", async (string id, string newPassword, HttpContext httpContext) =>
 {
-    var success = await controller.ChangePassword(id, password);
-    return success ? Results.Ok("Password changed successfully.") : Results.NotFound("User not found.");
+    var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+
+    try
+    {
+        var success = await controller.ChangePassword(id, newPassword, token);
+        return success ? Results.Ok("Password changed successfully.") : Results.NotFound("User not found.");
+    }
+    catch (UnauthorizedAccessException ex)
+    {
+        return Results.Unauthorized();
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
 });
 
-app.MapDelete("/User/Delete", async (string id) =>
+app.MapDelete("/User/Delete", async (string username, string password, HttpContext httpContext) =>
 {
-    await controller.DeleteUser(id);
-    return Results.Ok("User deleted successfully.");
+    var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+
+    try
+    {
+        await controller.DeleteUser(username, password, token);
+        return Results.Ok("User deleted successfully.");
+    }
+    catch (UnauthorizedAccessException ex)
+    {
+        return Results.Unauthorized();
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
 });
 
 app.Run();
-
-

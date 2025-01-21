@@ -1,10 +1,9 @@
-﻿using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using UserAPI.Models;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using System.Text;
 
 namespace UserAPI.Controllers;
@@ -49,8 +48,15 @@ public class UserController
         return null;
     }
 
-    public async Task<bool> ChangePassword(string id, string newPassword)
+    public async Task<bool> ChangePassword(string id, string newPassword, string token)
     {
+        var userIdFromToken = ValidateToken(token);
+
+        if (userIdFromToken != id)
+        {
+            throw new UnauthorizedAccessException("You are not authorized to change this password.");
+        }
+
         var objectId = ObjectId.Parse(id);
         var filter = Builders<User>.Filter.Eq(u => u.Id, objectId);
         var hashedPassword = HashPassword(newPassword);
@@ -59,12 +65,25 @@ public class UserController
         return result.ModifiedCount > 0;
     }
 
-    public async Task DeleteUser(string id)
+    public async Task DeleteUser(string username, string password, string token)
     {
-        var objectId = ObjectId.Parse(id);
-        var filter = Builders<User>.Filter.Eq(u => u.Id, objectId);
+        var userIdFromToken = ValidateToken(token);
+
+        var user = await GetUser(username);
+        if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.Password))
+        {
+            throw new UnauthorizedAccessException("Invalid username or password.");
+        }
+
+        if (user.Id.ToString() != userIdFromToken)
+        {
+            throw new UnauthorizedAccessException("You are not authorized to delete this user.");
+        }
+
+        var filter = Builders<User>.Filter.Eq(u => u.Id, user.Id);
         await collection.DeleteOneAsync(filter);
     }
+
 
     private string GenerateJwtToken(User user)
     {
@@ -86,5 +105,31 @@ public class UserController
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
+    }
+
+    public string ValidateToken(string token)
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.ASCII.GetBytes(jwtSettings.Secret);
+
+        try
+        {
+            var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                ValidateIssuer = true,
+                ValidIssuer = jwtSettings.Issuer,
+                ValidateAudience = true,
+                ValidAudience = jwtSettings.Audience,
+                ValidateLifetime = true
+            }, out SecurityToken validatedToken);
+
+            return principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        }
+        catch (Exception)
+        {
+            throw new UnauthorizedAccessException("Invalid or expired token.");
+        }
     }
 }
