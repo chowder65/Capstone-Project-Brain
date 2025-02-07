@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "yhb+p001Zbs=",
+  "dgSpecHash": "CXQ5FFFY5wc=",
   "success": true,
-  "projectFilePath": "C:\\Users\\mccul\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj",
+  "projectFilePath": "C:\\Users\\mccul\\Documents\\GitHub\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\mccul\\.nuget\\packages\\bcrypt\\1.0.0\\bcrypt.1.0.0.nupkg.sha512",
     "C:\\Users\\mccul\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",

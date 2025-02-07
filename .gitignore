@@ -1,6 +1,6 @@
-vue_desktop/
 UserAPI/obj/Debug/net8.0/UserAPI.AssemblyInfo.cs
 UserAPI/obj/Debug/net8.0/UserAPI.AssemblyInfo.cs
 UserAPI/obj/Debug/net8.0/UserAPI.AssemblyInfoInputs.cache
 UserAPI/obj/Debug/net8.0/UserAPI.assets.cache
 UserAPI/obj/Debug/net8.0/UserAPI.GeneratedMSBuildEditorConfig.editorconfig
+/vue-desktop/node_modules

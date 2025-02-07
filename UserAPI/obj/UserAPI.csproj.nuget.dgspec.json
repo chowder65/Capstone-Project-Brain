@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\mccul\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj": {}
+    "C:\\Users\\mccul\\Documents\\GitHub\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj": {}
   },
   "projects": {
-    "C:\\Users\\mccul\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj": {
+    "C:\\Users\\mccul\\Documents\\GitHub\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\mccul\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj",
+        "projectUniqueName": "C:\\Users\\mccul\\Documents\\GitHub\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj",
         "projectName": "UserAPI",
-        "projectPath": "C:\\Users\\mccul\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj",
+        "projectPath": "C:\\Users\\mccul\\Documents\\GitHub\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj",
         "packagesPath": "C:\\Users\\mccul\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\mccul\\RiderProjects\\Capstone-Project-Brain\\UserAPI\\obj\\",
+        "outputPath": "C:\\Users\\mccul\\Documents\\GitHub\\Capstone-Project-Brain\\UserAPI\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\mccul\\AppData\\Roaming\\NuGet\\NuGet.Config"
