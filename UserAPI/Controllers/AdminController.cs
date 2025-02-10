@@ -131,7 +131,6 @@ public class AdminController
         var objectId = ObjectId.Parse(userId);
         var filter = Builders<User>.Filter.Eq(u => u.Id, objectId);
         var update = Builders<User>.Update
-            .Set(u => u.UserName, updatedUser.UserName)
             .Set(u => u.Email, updatedUser.Email)
             .Set(u => u.Password, HashPassword(updatedUser.Password));
         var result = await userCollection.UpdateOneAsync(filter, update);

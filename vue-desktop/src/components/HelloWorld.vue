@@ -108,7 +108,6 @@
           </button>
         </div>
 
-        <!-- ChatInterface will be conditionally rendered after login -->
         <ChatInterface v-if="showChatInterface" />
       </div>
     </div>
@@ -116,7 +115,6 @@
 </template>
 
 <script>
-// Import the ChatInterface component
 import ChatInterface from '@/components/ChatInterface.vue'; // Adjust the path if necessary
 
 export default {
@@ -145,7 +143,6 @@ export default {
   },
 
   components: {
-    // Register the ChatInterface component here
     ChatInterface
   },
 
@@ -160,47 +157,46 @@ export default {
 
     // Method to handle successful login
     async onLoginSuccess() {
-      if (!this.loginValid) {
-        alert("Please check your email and password fields.");
-        return;
+  if (!this.loginValid) {
+    alert("Please check your email and password fields.");
+    return;
+  }
+
+  try {
+    const url = new URL('http://localhost:5168/User/LogIn');
+    url.searchParams.append('Email', this.email.value);
+    url.searchParams.append('password', this.password.value);
+
+    const response = await fetch(url, {
+      method: 'POST', // Use GET instead of POST
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // Check if the response is successful (status code 200)
+    if (response.ok) {
+      const data = await response.json();
+      if (data.token) {
+        // Save the token to localStorage or a Vuex store
+        localStorage.setItem('token', data.token);
+
+        // Hide login/register page and show ChatInterface
+        this.showLogin = false;
+        this.showChatInterface = true;
+      } else {
+        alert('Login failed: No token received.');
       }
-
-      try {
-        // Make a POST request to the login endpoint
-        const response = await fetch('http://localhost:5000/User/LogIn', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userName: this.email.value, // Assuming email is used as the username
-            password: this.password.value,
-          }),
-        });
-
-        // Check if the response is successful (status code 200)
-        if (response.ok) {
-          const data = await response.json();
-          if (data.token) {
-            // Save the token to localStorage or a Vuex store
-            localStorage.setItem('token', data.token);
-
-            // Hide login/register page and show ChatInterface
-            this.showLogin = false;
-            this.showChatInterface = true;
-          } else {
-            alert('Login failed: No token received.');
-          }
-        } else {
-          // Handle login failure
-          const errorData = await response.json();
-          alert(`Login failed: ${errorData.message || 'Invalid credentials'}`);
-        }
-      } catch (error) {
-        console.error('Error during login:', error);
-        alert('An error occurred during login. Please try again.');
-      }
+    } else {
+      // Handle login failure
+      const errorData = await response.json();
+      alert(`Login failed: ${errorData.message || 'Invalid credentials'}`);
     }
+  } catch (error) {
+    console.error('Error during login:', error);
+    alert('An error occurred during login. Please try again.');
+  }
+}
   },
 
   computed: {

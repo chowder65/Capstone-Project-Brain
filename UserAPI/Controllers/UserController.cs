@@ -28,19 +28,20 @@ public class UserController
 
     public async Task CreateUser(User user)
     {
+        user.Password = HashPassword(user.Password);
         user.Id = ObjectId.GenerateNewId();
         await collection.InsertOneAsync(user);
     }
 
-    public async Task<User?> GetUser(string userName)
+    public async Task<User?> GetUser(string email)
     {
-        var filter = Builders<User>.Filter.Eq("UserName", userName);
+        var filter = Builders<User>.Filter.Eq("Email", email);
         return await collection.Find(filter).FirstOrDefaultAsync();
     }
 
-    public async Task<string?> LogIn(string userName, string password)
+    public async Task<string?> LogIn(string email, string password)
     {
-        var user = await GetUser(userName);
+        var user = await GetUser(email);
         if (user != null && BCrypt.Net.BCrypt.Verify(password, user.Password))
         {
             return GenerateJwtToken(user);
@@ -65,11 +66,11 @@ public class UserController
         return result.ModifiedCount > 0;
     }
 
-    public async Task DeleteUser(string username, string password, string token)
+    public async Task DeleteUser(string email, string password, string token)
     {
         var userIdFromToken = ValidateToken(token);
 
-        var user = await GetUser(username);
+        var user = await GetUser(email);
         if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.Password))
         {
             throw new UnauthorizedAccessException("Invalid username or password.");
@@ -95,7 +96,7 @@ public class UserController
             Subject = new ClaimsIdentity(new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.UserName)
+                new Claim(ClaimTypes.Name, user.Email)
             }),
             Expires = DateTime.UtcNow.AddMinutes(jwtSettings.ExpirationInMinutes),
             Issuer = jwtSettings.Issuer,
