@@ -14,7 +14,10 @@
   "main": "background.js",
   "dependencies": {
     "core-js": "^3.8.3",
-    "vue": "^3.2.13"
+    "fs": "^0.0.1-security",
+    "path-browserify": "^1.0.1",
+    "vue": "^3.2.13",
+    "vue-advanced-chat": "^2.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
