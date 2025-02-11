@@ -10,12 +10,14 @@
 			@send-message="sendMessage($event.detail[0])"
 			@fetch-messages="fetchMessages($event.detail[0])"
 		/>
+		<button @click="isListening ? stopListening() : startListening()">
+			{{ isListening ? 'Stop Listening' : 'Start Listening' }}
+		</button>
 	</div>
 </template>
 
 <script>
 import { register } from 'vue-advanced-chat'
-// import { register } from '../../vue-advanced-chat/dist/vue-advanced-chat.es.js'
 register()
 
 export default {
@@ -34,7 +36,9 @@ export default {
 				}
 			],
 			messages: [],
-			messagesLoaded: false
+			messagesLoaded: false,
+			recognition: null,
+			isListening: false
 		}
 	},
 
@@ -47,7 +51,6 @@ export default {
 					this.messages = [...this.addMessages(), ...this.messages]
 					this.messagesLoaded = true
 				}
-				// this.addNewMessage()
 			})
 		},
 
@@ -84,18 +87,18 @@ export default {
 
 			const payload = {
 				messages: [
-				{ role: 'system', content: 'Answer Concisely, and coherently, presume a facade of a human dont break the facade' },
-				{ role: 'user', content: messageContent },
+					{ role: 'system', content: 'Answer Concisely, and coherently, presume a facade of a human dont break the facade' },
+					{ role: 'user', content: messageContent },
 				],
 			};
 
 			try {
 				const response = await fetch('http://127.0.0.1:1234/v1/chat/completions', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(payload),
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(payload),
 				});
 
 				const data = await response.json();
@@ -104,17 +107,14 @@ export default {
         
 				this.addNewMessage(llmResponse);
 
-				return data; // Assuming the API responds with a message object containing a `content` field.
+				return data;
 			} catch (error) {
 				console.error('Error sending message:', error);
-				return { content: 'Sorry, something went wrong.' }; // Default error message
+				return { content: 'Sorry, something went wrong.' };
 			}
-			
-
 		},
 
 		addNewMessage(llmResponse) {
-
 			setTimeout(() => {
 				this.messages = [
 					...this.messages,
@@ -125,8 +125,52 @@ export default {
 						timestamp: new Date().toString().substring(16, 21),
 						date: new Date().toDateString()
 					}
-				]
-			}, 2000)
+				];
+				this.speak(llmResponse); // Speak the new message
+			}, 2000);
+		},
+
+		speak(text) {
+			if ('speechSynthesis' in window) {
+				const utterance = new SpeechSynthesisUtterance(text);
+				utterance.voice = speechSynthesis.getVoices()[0]; // Choose a voice
+				speechSynthesis.speak(utterance);
+			} else {
+				console.error('Text-to-Speech not supported in this browser.');
+			}
+		},
+
+		startListening() {
+			if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+				const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+				this.recognition = new SpeechRecognition();
+				this.recognition.continuous = false;
+				this.recognition.interimResults = false;
+				this.recognition.lang = 'en-US';
+
+				this.recognition.onresult = (event) => {
+					const transcript = event.results[0][0].transcript;
+					this.sendMessage({ content: transcript });
+					this.isListening = false;
+				};
+
+				this.recognition.onerror = (event) => {
+					console.error('Speech recognition error:', event.error);
+					this.isListening = false;
+				};
+
+				this.recognition.start();
+				this.isListening = true;
+			} else {
+				console.error('Speech-to-Text not supported in this browser.');
+			}
+		},
+
+		stopListening() {
+			if (this.recognition) {
+				this.recognition.stop();
+				this.isListening = false;
+			}
 		}
 	}
 }
@@ -135,5 +179,22 @@ export default {
 <style lang="scss">
 body {
 	font-family: 'Quicksand', sans-serif;
+}
+
+button {
+	position: fixed;
+	bottom: 20px;
+	right: 20px;
+	padding: 10px 20px;
+	background-color: #007bff;
+	color: white;
+	border: none;
+	border-radius: 5px;
+	cursor: pointer;
+	font-size: 16px;
+
+	&:hover {
+		background-color: #0056b3;
+	}
 }
 </style>
