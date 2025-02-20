@@ -12,7 +12,7 @@ public class AdminController
 {
     private readonly IMongoCollection<Admin> adminCollection;
     private readonly IMongoCollection<User> userCollection;
-    //private readonly IMongoCollection<Chat> chatCollection;
+    private readonly IMongoCollection<Chat> chatCollection;
     private readonly JwtSettings jwtSettings;
 
     public AdminController(JwtSettings jwtSettings)
@@ -23,7 +23,7 @@ public class AdminController
         var database = client.GetDatabase("AdminAPI");
         adminCollection = database.GetCollection<Admin>("Admins");
         userCollection = database.GetCollection<User>("Users");
-        //chatCollection = database.GetCollection<Chat>("Chats");
+        chatCollection = database.GetCollection<Chat>("Chats");
     }
 
     public string HashPassword(string password)
@@ -187,7 +187,7 @@ public class AdminController
         }
     }
 
-    private void ValidateAdminToken(string token)
+    internal void ValidateAdminToken(string token)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(jwtSettings.Secret);
