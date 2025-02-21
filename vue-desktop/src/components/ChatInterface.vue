@@ -57,62 +57,78 @@ export default {
 		addMessages(reset) {
 			const messages = []
 
-			for (let i = 0; i < 30; i++) {
-				messages.push({
-					_id: reset ? i : this.messages.length + i,
-					content: `${reset ? '' : 'paginated'} message ${i + 1}`,
-					senderId: '4321',
-					username: 'John Doe',
-					date: '13 November',
-					timestamp: '10:20'
-				})
-			}
+			//for (let i = 0; i < 30; i++) {
+				//messages.push({
+					//_id: reset ? i : this.messages.length + i,
+					//content: `${reset ? '' : 'paginated'} message ${i + 1}`,
+					//senderId: '4321',
+					//username: 'John Doe',
+					//date: '13 November',
+				//	timestamp: '10:20'
+				//})
+			//}
 
 			return messages
 		},
 
 		async sendMessage(message) {
-			this.messages = [
-				...this.messages,
-				{
-					_id: this.messages.length,
-					content: message.content,
-					senderId: this.currentUserId,
-					timestamp: new Date().toString().substring(16, 21),
-					date: new Date().toDateString()
-				}
-			]
+	// Add user message to chat immediately
+	this.messages = [
+		...this.messages,
+		{
+			_id: this.messages.length,
+			content: message.content,
+			senderId: this.currentUserId,
+			timestamp: new Date().toString().substring(16, 21),
+			date: new Date().toDateString()
+		}
+	];
 
-			let messageContent = message.content;
+	// Prepare payload for backend
+	const chatPayload = {
+		roomId: '1', // Update dynamically if needed
+		senderId: this.currentUserId,
+		content: message.content,
+	};
 
-			const payload = {
-				messages: [
-					{ role: 'system', content: 'Answer Concisely, and coherently, presume a facade of a human dont break the facade' },
-					{ role: 'user', content: messageContent },
-				],
-			};
+	// Send message to the backend
+	try {
+		await fetch('http://localhost:5168/api/chat/sendMessage', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${localStorage.getItem('token')}`
+			},
+			body: JSON.stringify(chatPayload),
+		});
+	} catch (error) {
+		console.error('Error sending message to backend:', error);
+	}
 
-			try {
-				const response = await fetch('http://127.0.0.1:1234/v1/chat/completions', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify(payload),
-				});
 
-				const data = await response.json();
+	const llmPayload = {
+		messages: [
+			{ role: 'system', content: 'Answer Concisely, and coherently, presume a facade of a human dont break the facade' },
+			{ role: 'user', content: message.content },
+		],
+	};
 
-				const llmResponse = data.choices[0].message.content;
-        
-				this.addNewMessage(llmResponse);
+	try {
+		const response = await fetch('http://127.0.0.1:1234/v1/chat/completions', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(llmPayload),
+		});
 
-				return data;
-			} catch (error) {
-				console.error('Error sending message:', error);
-				return { content: 'Sorry, something went wrong.' };
-			}
-		},
+		const data = await response.json();
+		const llmResponse = data.choices[0].message.content;
+
+		this.addNewMessage(llmResponse);
+
+	} catch (error) {
+		console.error('Error getting LLM response:', error);
+	}
+},
 
 		addNewMessage(llmResponse) {
 			setTimeout(() => {
