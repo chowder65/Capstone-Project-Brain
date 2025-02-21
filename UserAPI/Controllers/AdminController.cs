@@ -106,15 +106,6 @@ public class AdminController
         await userCollection.DeleteOneAsync(filter);
     }
 
-    // public async Task<List<Chat>> GetUserChats(string userId, string token)
-    // {
-    //     ValidateAdminToken(token);
-    //
-    //     var objectId = ObjectId.Parse(userId);
-    //     var filter = Builders<Chat>.Filter.Eq(c => c.UserId, objectId);
-    //     return await chatCollection.Find(filter).ToListAsync();
-    // }
-
     public async Task<User?> GetUser(string userId, string token)
     {
         ValidateAdminToken(token);
@@ -131,7 +122,7 @@ public class AdminController
         var objectId = ObjectId.Parse(userId);
         var filter = Builders<User>.Filter.Eq(u => u.Id, objectId);
         var update = Builders<User>.Update
-            .Set(u => u.UserName, updatedUser.UserName)
+            .Set(u => u.Email, updatedUser.Email)
             .Set(u => u.Email, updatedUser.Email)
             .Set(u => u.Password, HashPassword(updatedUser.Password));
         var result = await userCollection.UpdateOneAsync(filter, update);

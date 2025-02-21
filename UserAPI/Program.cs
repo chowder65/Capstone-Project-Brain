@@ -55,15 +55,15 @@ app.MapPost("/User/Create", async (User user) =>
     return Results.Ok("User created successfully.");
 });
 
-app.MapGet("/User/GetByUserName", async (string userName) =>
+app.MapGet("/User/GetByEmail", async (string email) =>
 {
-    var user = await controller.GetUser(userName);
+    var user = await controller.GetUser(email);
     return user is not null ? Results.Ok(user) : Results.NotFound("User not found.");
 });
 
-app.MapPost("/User/LogIn", async (string userName, string password) =>
+app.MapPost("/User/LogIn", async (string email, string password) =>
 {
-    var token = await controller.LogIn(userName, password);
+    var token = await controller.LogIn(email, password);
     return token is not null ? Results.Ok(new { Token = token }) : Results.Unauthorized();
 });
 
@@ -86,13 +86,13 @@ app.MapPut("/User/ChangePassword", async (string id, string newPassword, HttpCon
     }
 });
 
-app.MapDelete("/User/Delete", async (string username, string password, HttpContext httpContext) =>
+app.MapDelete("/User/Delete", async (string email, string password, HttpContext httpContext) =>
 {
     var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
 
     try
     {
-        await controller.DeleteUser(username, password, token);
+        await controller.DeleteUser(email, password, token);
         return Results.Ok("User deleted successfully.");
     }
     catch (UnauthorizedAccessException ex)
@@ -184,15 +184,15 @@ app.MapPost("/Admin/Create", async (Admin admin) =>
     return Results.Ok("Admin created successfully.");
 });
 
-app.MapGet("/Admin/GetByUserName", async (string userName) =>
+app.MapGet("/Admin/GetByEmail", async (string email) =>
 {
-    var admin = await adminController.GetAdmin(userName);
+    var admin = await adminController.GetAdmin(email);
     return admin is not null ? Results.Ok(admin) : Results.NotFound("Admin not found.");
 });
 
-app.MapPost("/Admin/LogIn", async (string userName, string password) =>
+app.MapPost("/Admin/LogIn", async (string email, string password) =>
 {
-    var token = await adminController.LogIn(userName, password);
+    var token = await adminController.LogIn(email, password);
     return token is not null ? Results.Ok(new { Token = token }) : Results.Unauthorized();
 });
 
@@ -215,13 +215,13 @@ app.MapPut("/Admin/ChangePassword", async (string id, string newPassword, HttpCo
     }
 });
 
-app.MapDelete("/Admin/Delete", async (string username, string password, HttpContext httpContext) =>
+app.MapDelete("/Admin/Delete", async (string email, string password, HttpContext httpContext) =>
 {
     var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
 
     try
     {
-        await adminController.DeleteAdmin(username, password, token);
+        await adminController.DeleteAdmin(email, password, token);
         return Results.Ok("Admin deleted successfully.");
     }
     catch (UnauthorizedAccessException ex)
