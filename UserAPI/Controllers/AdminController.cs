@@ -12,7 +12,7 @@ public class AdminController
 {
     private readonly IMongoCollection<Admin> adminCollection;
     private readonly IMongoCollection<User> userCollection;
-    private readonly IMongoCollection<Chat> chatCollection;
+    //private readonly IMongoCollection<Chat> chatCollection;
     private readonly JwtSettings jwtSettings;
 
     public AdminController(JwtSettings jwtSettings)
@@ -23,7 +23,7 @@ public class AdminController
         var database = client.GetDatabase("AdminAPI");
         adminCollection = database.GetCollection<Admin>("Admins");
         userCollection = database.GetCollection<User>("Users");
-        chatCollection = database.GetCollection<Chat>("Chats");
+        //chatCollection = database.GetCollection<Chat>("Chats");
     }
 
     public string HashPassword(string password)
@@ -106,6 +106,15 @@ public class AdminController
         await userCollection.DeleteOneAsync(filter);
     }
 
+    // public async Task<List<Chat>> GetUserChats(string userId, string token)
+    // {
+    //     ValidateAdminToken(token);
+    //
+    //     var objectId = ObjectId.Parse(userId);
+    //     var filter = Builders<Chat>.Filter.Eq(c => c.UserId, objectId);
+    //     return await chatCollection.Find(filter).ToListAsync();
+    // }
+
     public async Task<User?> GetUser(string userId, string token)
     {
         ValidateAdminToken(token);
@@ -122,7 +131,6 @@ public class AdminController
         var objectId = ObjectId.Parse(userId);
         var filter = Builders<User>.Filter.Eq(u => u.Id, objectId);
         var update = Builders<User>.Update
-            .Set(u => u.Email, updatedUser.Email)
             .Set(u => u.Email, updatedUser.Email)
             .Set(u => u.Password, HashPassword(updatedUser.Password));
         var result = await userCollection.UpdateOneAsync(filter, update);
@@ -178,7 +186,7 @@ public class AdminController
         }
     }
 
-    internal void ValidateAdminToken(string token)
+    private void ValidateAdminToken(string token)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(jwtSettings.Secret);

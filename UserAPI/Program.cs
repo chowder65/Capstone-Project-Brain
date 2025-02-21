@@ -28,6 +28,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAllOrigins",
+        builder =>
+        {
+            builder.AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader();
+        });
+});
+
 builder.Services.AddAuthorization();
 
 builder.Services.AddEndpointsApiExplorer();
@@ -47,17 +58,15 @@ app.UseAuthorization();
 
 UserController controller = new UserController(jwtSettings);
 
-ChatController chatController = new ChatController(jwtSettings);
-
 app.MapPost("/User/Create", async (User user) =>
 {
     await controller.CreateUser(user);
     return Results.Ok("User created successfully.");
 });
 
-app.MapGet("/User/GetByEmail", async (string email) =>
+app.MapGet("/User/GetByUserName", async (string userName) =>
 {
-    var user = await controller.GetUser(email);
+    var user = await controller.GetUser(userName);
     return user is not null ? Results.Ok(user) : Results.NotFound("User not found.");
 });
 
@@ -86,13 +95,13 @@ app.MapPut("/User/ChangePassword", async (string id, string newPassword, HttpCon
     }
 });
 
-app.MapDelete("/User/Delete", async (string email, string password, HttpContext httpContext) =>
+app.MapDelete("/User/Delete", async (string username, string password, HttpContext httpContext) =>
 {
     var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
 
     try
     {
-        await controller.DeleteUser(email, password, token);
+        await controller.DeleteUser(username, password, token);
         return Results.Ok("User deleted successfully.");
     }
     catch (UnauthorizedAccessException ex)
@@ -105,77 +114,6 @@ app.MapDelete("/User/Delete", async (string email, string password, HttpContext 
     }
 });
 
-app.MapGet("/User/Chats", async (HttpContext httpContext) =>
-{
-    var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-
-    try
-    {
-        var userId = chatController.ValidateToken(token);
-        var userChats = await chatController.GetChatsByUserId(userId);
-        return Results.Ok(userChats);
-    }
-    catch (UnauthorizedAccessException)
-    {
-        return Results.Unauthorized();
-    }
-});
-
-app.MapPost("/User/StartChat", async (HttpContext httpContext) =>
-{
-    var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-
-    try
-    {
-        var userId = chatController.ValidateToken(token);
-        var chatId = await chatController.StartNewChat(userId, token);
-        return Results.Ok(new { ChatId = chatId.ToString() });
-    }
-    catch (UnauthorizedAccessException)
-    {
-        return Results.Unauthorized();
-    }
-});
-
-app.MapPost("/User/Chat/AddMessage", async (string chatId, string message, HttpContext httpContext) =>
-{
-    var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-
-    try
-    {
-        await chatController.AddMessageToChat(chatId, message, token);
-        return Results.Ok("Message added successfully.");
-    }
-    catch (UnauthorizedAccessException)
-    {
-        return Results.Unauthorized();
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(ex.Message);
-    }
-});
-
-app.MapGet("/User/Chat/History", async (string chatId, HttpContext httpContext) =>
-{
-    var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-
-    try
-    {
-        var chat = await chatController.GetChatHistory(chatId, token);
-        return chat is not null ? Results.Ok(chat) : Results.NotFound("Chat not found.");
-    }
-    catch (UnauthorizedAccessException)
-    {
-        return Results.Unauthorized();
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(ex.Message);
-    }
-});
-
-
 AdminController adminController = new AdminController(jwtSettings);
 
 app.MapPost("/Admin/Create", async (Admin admin) =>
@@ -184,15 +122,15 @@ app.MapPost("/Admin/Create", async (Admin admin) =>
     return Results.Ok("Admin created successfully.");
 });
 
-app.MapGet("/Admin/GetByEmail", async (string email) =>
+app.MapGet("/Admin/GetByUserName", async (string userName) =>
 {
-    var admin = await adminController.GetAdmin(email);
+    var admin = await adminController.GetAdmin(userName);
     return admin is not null ? Results.Ok(admin) : Results.NotFound("Admin not found.");
 });
 
-app.MapPost("/Admin/LogIn", async (string email, string password) =>
+app.MapPost("/Admin/LogIn", async (string userName, string password) =>
 {
-    var token = await adminController.LogIn(email, password);
+    var token = await adminController.LogIn(userName, password);
     return token is not null ? Results.Ok(new { Token = token }) : Results.Unauthorized();
 });
 
@@ -215,13 +153,13 @@ app.MapPut("/Admin/ChangePassword", async (string id, string newPassword, HttpCo
     }
 });
 
-app.MapDelete("/Admin/Delete", async (string email, string password, HttpContext httpContext) =>
+app.MapDelete("/Admin/Delete", async (string username, string password, HttpContext httpContext) =>
 {
     var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
 
     try
     {
-        await adminController.DeleteAdmin(email, password, token);
+        await adminController.DeleteAdmin(username, password, token);
         return Results.Ok("Admin deleted successfully.");
     }
     catch (UnauthorizedAccessException ex)
@@ -233,6 +171,44 @@ app.MapDelete("/Admin/Delete", async (string email, string password, HttpContext
         return Results.BadRequest(ex.Message);
     }
 });
+
+app.MapDelete("/Admin/DeleteUser", async (string userId, HttpContext httpContext) =>
+{
+    var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+
+    try
+    {
+        await adminController.DeleteUser(userId, token);
+        return Results.Ok("User deleted successfully.");
+    }
+    catch (UnauthorizedAccessException ex)
+    {
+        return Results.Unauthorized();
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+});
+
+// app.MapGet("/Admin/GetUserChats", async (string userId, HttpContext httpContext) =>
+// {
+//     var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
+//
+//     try
+//     {
+//         var chats = await adminController.GetUserChats(userId, token);
+//         return Results.Ok(chats);
+//     }
+//     catch (UnauthorizedAccessException ex)
+//     {
+//         return Results.Unauthorized();
+//     }
+//     catch (Exception ex)
+//     {
+//         return Results.BadRequest(ex.Message);
+//     }
+// });
 
 app.MapGet("/Admin/GetUser", async (string userId, HttpContext httpContext) =>
 {
@@ -263,82 +239,6 @@ app.MapPut("/Admin/UpdateUser", async (string userId, User updatedUser, HttpCont
         return success ? Results.Ok("User updated successfully.") : Results.NotFound("User not found.");
     }
     catch (UnauthorizedAccessException ex)
-    {
-        return Results.Unauthorized();
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(ex.Message);
-    }
-});
-
-app.MapGet("/Admin/Chat/History", async (string chatId, HttpContext httpContext) =>
-{
-    var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-
-    try
-    {
-        chatController.ValidateAdminToken(token);
-        var chat = await chatController.GetChatHistory(chatId, token);
-        return chat is not null ? Results.Ok(chat) : Results.NotFound("Chat not found.");
-    }
-    catch (UnauthorizedAccessException)
-    {
-        return Results.Unauthorized();
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(ex.Message);
-    }
-});
-
-app.MapGet("/Admin/UserChats", async (string userId, HttpContext httpContext) =>
-{
-    var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-
-    try
-    {
-        chatController.ValidateAdminToken(token);
-        var userChats = await chatController.GetChatsByUserId(userId);
-        return Results.Ok(userChats);
-    }
-    catch (UnauthorizedAccessException)
-    {
-        return Results.Unauthorized();
-    }
-});
-
-app.MapDelete("/Admin/DeleteChat", async (string chatId, HttpContext httpContext) =>
-{
-    var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-
-    try
-    {
-        chatController.ValidateAdminToken(token);
-        await chatController.DeleteChat(chatId);
-        return Results.Ok("Chat deleted successfully.");
-    }
-    catch (UnauthorizedAccessException)
-    {
-        return Results.Unauthorized();
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(ex.Message);
-    }
-});
-
-app.MapDelete("/Admin/DeleteUser", async (string userId, HttpContext httpContext) =>
-{
-    var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-
-    try
-    {
-        adminController.ValidateAdminToken(token);
-        await adminController.DeleteUser(userId, token);
-        return Results.Ok("User and their chats deleted successfully.");
-    }
-    catch (UnauthorizedAccessException)
     {
         return Results.Unauthorized();
     }
