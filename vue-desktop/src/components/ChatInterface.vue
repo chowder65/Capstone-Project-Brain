@@ -57,22 +57,23 @@ export default {
 		addMessages(reset) {
 			const messages = []
 
-			//for (let i = 0; i < 30; i++) {
-				//messages.push({
-					//_id: reset ? i : this.messages.length + i,
-					//content: `${reset ? '' : 'paginated'} message ${i + 1}`,
-					//senderId: '4321',
-					//username: 'John Doe',
-					//date: '13 November',
-				//	timestamp: '10:20'
-				//})
-			//}
+			for (let i = 0; i < 30; i++) {
+				messages.push({
+					_id: reset ? i : this.messages.length + i,
+					content: `${reset ? '' : 'paginated'} message ${i + 1}`,
+					senderId: '4321',
+					username: 'John Doe',
+					date: '13 November',
+					timestamp: '10:20'
+				})
+			}
 
 			return messages
 		},
 
 		async sendMessage(message) {
-	// Add user message to chat immediately
+
+
 	this.messages = [
 		...this.messages,
 		{
@@ -84,31 +85,31 @@ export default {
 		}
 	];
 
-	// Prepare payload for backend
 	const chatPayload = {
-		roomId: '1', // Update dynamically if needed
-		senderId: this.currentUserId,
+		chatId: '1', 
 		content: message.content,
 	};
 
-	// Send message to the backend
 	try {
-		await fetch('http://localhost:5168/api/chat/sendMessage', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
+  const authToken = this.authToken;
+  if (!authToken) throw new Error('No auth token found');
+
+  await fetch('http://localhost:5168User/Chat/AddMessage', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
 				Authorization: `Bearer ${localStorage.getItem('token')}`
-			},
-			body: JSON.stringify(chatPayload),
-		});
-	} catch (error) {
-		console.error('Error sending message to backend:', error);
-	}
+    },
+    body: JSON.stringify(chatPayload),
+  });
+} catch (error) {
+  console.error('Error sending message to backend:', error);
+}
 
 
 	const llmPayload = {
 		messages: [
-			{ role: 'system', content: 'Answer Concisely, and coherently, presume a facade of a human dont break the facade' },
+			{ role: 'system', content: 'Answer Concisely, and coherently, presume a facade of a human and dont break the facade' },
 			{ role: 'user', content: message.content },
 		],
 	};

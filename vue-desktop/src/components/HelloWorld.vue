@@ -114,7 +114,7 @@
   </div>
 </template>
 
-<script>
+ <script>
 import ChatInterface from '@/components/ChatInterface.vue'; // Adjust the path if necessary
 
 export default {
@@ -122,23 +122,13 @@ export default {
     return {
       emailRegex: /^[\w.-]+@[\w.-]+\.\w+$/,
       passwordRegex: /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/,
-
       firstName: "",
       lastName: "",
-
-      password: {
-        value: "",
-        error: false
-      },
-
-      email: {
-        value: "",
-        error: false
-      },
-
+      password: { value: "", error: false },
+      email: { value: "", error: false },
       signIn: true,
-      showLogin: true, // Controls visibility of login/register page
-      showChatInterface: false // Controls visibility of the ChatInterface
+      showLogin: true,
+      showChatInterface: false,
     };
   },
 
@@ -155,48 +145,45 @@ export default {
       this.password.error = this.password.value === "";
     },
 
-    // Method to handle successful login
     async onLoginSuccess() {
   if (!this.loginValid) {
     alert("Please check your email and password fields.");
     return;
   }
 
-  try {
-    const url = new URL('http://localhost:5168/User/LogIn');
+      try {
+        const url = new URL('http://localhost:5168/User/LogIn');
     url.searchParams.append('Email', this.email.value);
-    url.searchParams.append('password', this.password.value);
+          url.searchParams.append('password', this.password.value);
 
-    const response = await fetch(url, {
+          const response = await fetch(url, {
       method: 'POST', // Use GET instead of POST
       headers: {
         'Content-Type': 'application/json',
       },
-    });
+          });
 
-    // Check if the response is successful (status code 200)
-    if (response.ok) {
-      const data = await response.json();
-      if (data.token) {
+        if (response.ok) {
+          const data = await response.json();
+          if (data.token) {
         // Save the token to localStorage or a Vuex store
         localStorage.setItem('token', data.token);
 
         // Hide login/register page and show ChatInterface
         this.showLogin = false;
         this.showChatInterface = true;
-      } else {
-        alert('Login failed: No token received.');
-      }
-    } else {
+          } else {
+            alert('Login failed: No token received.');
+          }
+        } else {
       // Handle login failure
       const errorData = await response.json();
       alert(`Login failed: ${errorData.message || 'Invalid credentials'}`);
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+      }
     }
-  } catch (error) {
-    console.error('Error during login:', error);
-    alert('An error occurred during login. Please try again.');
-  }
-}
   },
 
   computed: {
