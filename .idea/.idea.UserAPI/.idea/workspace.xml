@@ -9,6 +9,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
+<<<<<<< Updated upstream
     <list default="true" id="75d0ef96-e86c-47b2-b978-d20baa9934c1" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.UserAPI/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.UserAPI/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.UserAPI/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.UserAPI/.idea/workspace.xml" afterDir="false" />
@@ -25,11 +26,15 @@
       <change beforePath="$PROJECT_DIR$/UserAPI/obj/Debug/net8.0/refint/UserAPI.dll" beforeDir="false" afterPath="$PROJECT_DIR$/UserAPI/obj/Debug/net8.0/refint/UserAPI.dll" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/vue-desktop/src/components/ChatInterface.vue" beforeDir="false" afterPath="$PROJECT_DIR$/vue-desktop/src/components/ChatInterface.vue" afterDir="false" />
     </list>
+=======
+    <list default="true" id="1ba8b319-9880-41b9-89dd-0fb961df8d46" name="Changes" comment="" />
+>>>>>>> Stashed changes
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+<<<<<<< Updated upstream
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
@@ -135,5 +140,46 @@
   <component name="UnityProjectConfiguration" hasMinimizedUI="false" />
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
+=======
+  <component name="HighlightingSettingsPerFile">
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Controllers/AdminController.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Controllers/AdminController.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Controllers/AdminController.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Controllers/AdminController.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Controllers/AdminController.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Controllers/AdminController.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Controllers/AdminController.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Controllers/AdminController.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Controllers/UserController.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Controllers/UserController.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Models/User.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Models/User.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Program.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Program.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Program.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Program.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Program.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Program.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Program.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Program.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="mock://C:/Users/mccul/Documents/GitHub/Capstone-Project-Brain/UserAPI/Program.cs" root0="SKIP_HIGHLIGHTING" />
+  </component>
+  <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="false" />
+  <component name="TaskManager">
+    <servers />
+  </component>
+  <component name="UnityCheckinConfiguration" checkUnsavedScenes="false" />
+  <component name="UnityProjectConfiguration" hasMinimizedUI="false" />
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+>>>>>>> Stashed changes
   </component>
 </project>
