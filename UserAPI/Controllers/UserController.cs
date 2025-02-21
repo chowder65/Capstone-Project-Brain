@@ -73,7 +73,7 @@ public class UserController
         var user = await GetUser(email);
         if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.Password))
         {
-            throw new UnauthorizedAccessException("Invalid username or password.");
+            throw new UnauthorizedAccessException("Invalid email or password.");
         }
 
         if (user.Id.ToString() != userIdFromToken)

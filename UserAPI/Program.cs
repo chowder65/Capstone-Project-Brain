@@ -28,25 +28,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAllOrigins",
-        builder =>
-        {
-            builder.AllowAnyOrigin()
-                .AllowAnyMethod()
-                .AllowAnyHeader();
-        });
-});
-
 builder.Services.AddAuthorization();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-
-app.UseCors("AllowAllOrigins");
 
 if (app.Environment.IsDevelopment())
 {
@@ -66,15 +53,15 @@ app.MapPost("/User/Create", async (User user) =>
     return Results.Ok("User created successfully.");
 });
 
-app.MapGet("/User/GetByEmail", async (string email) =>
+app.MapGet("/User/GetByUserName", async (string userName) =>
 {
-    var user = await controller.GetUser(email);
+    var user = await controller.GetUser(userName);
     return user is not null ? Results.Ok(user) : Results.NotFound("User not found.");
 });
 
-app.MapPost("/User/LogIn", async (string Email, string password) =>
+app.MapPost("/User/LogIn", async (string email, string password) =>
 {
-    var token = await controller.LogIn(Email, password);
+    var token = await controller.LogIn(email, password);
     return token is not null ? Results.Ok(new { Token = token }) : Results.Unauthorized();
 });
 
