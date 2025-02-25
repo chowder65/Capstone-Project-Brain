@@ -25,32 +25,28 @@ namespace UserAPI.Controllers
             chatCollection = database.GetCollection<Chat>("Chats");
         }
 
-        public async Task<ObjectId> StartNewChat(string userEmail, string token)
+        public async Task<string> StartNewChat(string userEmail, string token, string chatName = null) // Return string
         {
             ValidateToken(token);
-
-            var chat = new Chat(userEmail);
+            var chat = new Chat(userEmail, chatName);
             await chatCollection.InsertOneAsync(chat);
-            return chat.Id;
+            return chat.Id; // Now a string
         }
 
         public async Task AddMessageToChat(string chatId, string messageText, string token)
         {
             ValidateToken(token);
-
-            var chatObjectId = new ObjectId(chatId);
-            var filter = Builders<Chat>.Filter.Eq(c => c.Id, chatObjectId);
+            var chatObjectId = new ObjectId(chatId); // Convert string to ObjectId
+            var filter = Builders<Chat>.Filter.Eq(c => c.Id, chatObjectId.ToString()); // Use string internally
             var update = Builders<Chat>.Update.Push(c => c.Messages, new Message(messageText));
-
             await chatCollection.UpdateOneAsync(filter, update);
         }
 
         public async Task<Chat> GetChatHistory(string chatId, string token)
         {
             ValidateToken(token);
-
             var chatObjectId = new ObjectId(chatId);
-            var filter = Builders<Chat>.Filter.Eq(c => c.Id, chatObjectId);
+            var filter = Builders<Chat>.Filter.Eq(c => c.Id, chatObjectId.ToString());
             return await chatCollection.Find(filter).FirstOrDefaultAsync();
         }
 
@@ -63,7 +59,7 @@ namespace UserAPI.Controllers
         public async Task DeleteChat(string chatId)
         {
             var chatObjectId = new ObjectId(chatId);
-            var filter = Builders<Chat>.Filter.Eq(c => c.Id, chatObjectId);
+            var filter = Builders<Chat>.Filter.Eq(c => c.Id, chatObjectId.ToString());
             await chatCollection.DeleteOneAsync(filter);
         }
 
