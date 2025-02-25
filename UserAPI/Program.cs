@@ -5,8 +5,13 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using AdminAPI.Controllers;
+using Microsoft.AspNetCore.Mvc;
+
+
 
 Env.Load();
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -135,15 +140,16 @@ app.MapGet("/User/Chats", async (HttpContext httpContext) =>
     }
 });
 
-app.MapPost("/User/StartChat", async (HttpContext httpContext) =>
+
+
+app.MapPost("/User/StartChat", async (HttpContext httpContext, [FromBody] ChatRequest request) =>
 {
     var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-
     try
     {
         var userId = chatController.ValidateToken(token);
-        var chatId = await chatController.StartNewChat(userId, token);
-        return Results.Ok(new { ChatId = chatId.ToString() });
+        var chatId = await chatController.StartNewChat(userId, token, request.ChatName);
+        return Results.Ok(new { ChatId = chatId });
     }
     catch (UnauthorizedAccessException)
     {
@@ -151,13 +157,12 @@ app.MapPost("/User/StartChat", async (HttpContext httpContext) =>
     }
 });
 
-app.MapPost("/User/Chat/AddMessage", async (string chatId, string message, HttpContext httpContext) =>
+app.MapPost("/User/Chat/AddMessage", async ([FromBody] AddMessageRequest request, HttpContext httpContext) =>
 {
     var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-
     try
     {
-        await chatController.AddMessageToChat(chatId, message, token);
+        await chatController.AddMessageToChat(request.ChatId, request.Message, token);
         return Results.Ok("Message added successfully.");
     }
     catch (UnauthorizedAccessException)
@@ -170,10 +175,9 @@ app.MapPost("/User/Chat/AddMessage", async (string chatId, string message, HttpC
     }
 });
 
-app.MapGet("/User/Chat/History", async (string chatId, HttpContext httpContext) =>
+app.MapGet("/User/Chat/History", async ([FromQuery] string chatId, HttpContext httpContext) =>
 {
     var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
-
     try
     {
         var chat = await chatController.GetChatHistory(chatId, token);
@@ -363,3 +367,14 @@ app.MapDelete("/Admin/DeleteUser", async (string userId, HttpContext httpContext
 });
 
 app.Run();
+
+public class ChatRequest
+{
+    public string ChatName { get; set; }
+}
+
+public class AddMessageRequest
+{
+    public string ChatId { get; set; }
+    public string Message { get; set; }
+}
