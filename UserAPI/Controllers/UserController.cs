@@ -39,14 +39,33 @@ public class UserController
         return await collection.Find(filter).FirstOrDefaultAsync();
     }
 
-    public async Task<string?> LogIn(string email, string password)
+    public async Task<string> LogIn(string email, string password)
     {
-        var user = await GetUser(email);
-        if (user != null && BCrypt.Net.BCrypt.Verify(password, user.Password))
+        Console.WriteLine($"Login attempt for email: {email}");
+
+        var claims = new List<Claim>
         {
-            return GenerateJwtToken(user);
-        }
-        return null;
+            new Claim(ClaimTypes.Email, email),
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtSettings.Secret));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
+
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(claims),
+            Expires = DateTime.UtcNow.AddHours(1),
+            Issuer = jwtSettings.Issuer,
+            Audience = jwtSettings.Audience,
+            SigningCredentials = creds
+        };
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        var tokenString = tokenHandler.WriteToken(token);
+
+        Console.WriteLine($"Generated token for {email}: {tokenString}");
+        return tokenString;
     }
 
     public async Task<bool> ChangePassword(string id, string newPassword, string token)

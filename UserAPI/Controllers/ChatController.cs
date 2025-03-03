@@ -5,7 +5,6 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.IdentityModel.Tokens;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using UserAPI.Models;
 
@@ -25,28 +24,39 @@ namespace UserAPI.Controllers
             chatCollection = database.GetCollection<Chat>("Chats");
         }
 
-        public async Task<string> StartNewChat(string userEmail, string token, string chatName = null) // Return string
+        public async Task<string> StartNewChat(string userEmail, string token, string chatName = null)
         {
-            ValidateToken(token);
-            var chat = new Chat(userEmail, chatName);
+            var validatedEmail = ValidateToken(token);
+            Console.WriteLine($"StartNewChat - Provided userEmail: {userEmail}, Validated email: {validatedEmail}");
+            if (userEmail != validatedEmail)
+            {
+                throw new UnauthorizedAccessException("Email does not match authenticated user.");
+            }
+            var chat = new Chat(validatedEmail, chatName);
+            Console.WriteLine($"Chat created - ID: {chat.Id}, UserEmail: {chat.UserEmail}, ChatName: {chat.ChatName}");
             await chatCollection.InsertOneAsync(chat);
-            return chat.Id; // Now a string
+            Console.WriteLine("Chat inserted into MongoDB");
+            return chat.Id;
         }
 
         public async Task AddMessageToChat(string chatId, string messageText, string token)
         {
-            ValidateToken(token);
-            var chatObjectId = new ObjectId(chatId); // Convert string to ObjectId
-            var filter = Builders<Chat>.Filter.Eq(c => c.Id, chatObjectId.ToString()); // Use string internally
+            var userEmail = ValidateToken(token);
+            var filter = Builders<Chat>.Filter.And(
+                Builders<Chat>.Filter.Eq(c => c.Id, chatId),
+                Builders<Chat>.Filter.Eq(c => c.UserEmail, userEmail) 
+            );
             var update = Builders<Chat>.Update.Push(c => c.Messages, new Message(messageText));
             await chatCollection.UpdateOneAsync(filter, update);
         }
 
         public async Task<Chat> GetChatHistory(string chatId, string token)
         {
-            ValidateToken(token);
-            var chatObjectId = new ObjectId(chatId);
-            var filter = Builders<Chat>.Filter.Eq(c => c.Id, chatObjectId.ToString());
+            var userEmail = ValidateToken(token);
+            var filter = Builders<Chat>.Filter.And(
+                Builders<Chat>.Filter.Eq(c => c.Id, chatId),
+                Builders<Chat>.Filter.Eq(c => c.UserEmail, userEmail) 
+            );
             return await chatCollection.Find(filter).FirstOrDefaultAsync();
         }
 
@@ -56,10 +66,12 @@ namespace UserAPI.Controllers
             return await chatCollection.Find(filter).ToListAsync();
         }
 
-        public async Task DeleteChat(string chatId)
+        public async Task DeleteChat(string chatId, string userEmail)
         {
-            var chatObjectId = new ObjectId(chatId);
-            var filter = Builders<Chat>.Filter.Eq(c => c.Id, chatObjectId.ToString());
+            var filter = Builders<Chat>.Filter.And(
+                Builders<Chat>.Filter.Eq(c => c.Id, chatId),
+                Builders<Chat>.Filter.Eq(c => c.UserEmail, userEmail) 
+            );
             await chatCollection.DeleteOneAsync(filter);
         }
 
@@ -67,7 +79,6 @@ namespace UserAPI.Controllers
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(jwtSettings.Secret);
-
             try
             {
                 var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
@@ -80,7 +91,6 @@ namespace UserAPI.Controllers
                     ValidAudience = jwtSettings.Audience,
                     ValidateLifetime = true
                 }, out SecurityToken validatedToken);
-
                 return principal.FindFirstValue(ClaimTypes.Email);
             }
             catch (Exception)

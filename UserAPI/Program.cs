@@ -326,14 +326,14 @@ app.MapGet("/Admin/UserChats", async (string userId, HttpContext httpContext) =>
     }
 });
 
-app.MapDelete("/Admin/DeleteChat", async (string chatId, HttpContext httpContext) =>
+app.MapDelete("/Admin/DeleteChat", async (string chatId, string userEmail, HttpContext httpContext) =>
 {
     var token = httpContext.Request.Headers.Authorization.ToString().Replace("Bearer ", "");
 
     try
     {
         chatController.ValidateAdminToken(token);
-        await chatController.DeleteChat(chatId);
+        await chatController.DeleteChat(chatId, userEmail);
         return Results.Ok("Chat deleted successfully.");
     }
     catch (UnauthorizedAccessException)
@@ -371,6 +371,7 @@ app.Run();
 public class ChatRequest
 {
     public string ChatName { get; set; }
+    
 }
 
 public class AddMessageRequest

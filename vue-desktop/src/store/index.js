@@ -62,18 +62,33 @@ export default createStore({
       commit('setChats', chats);
     },
     async createChat({ commit, state }, chatName) {
-      const response = await axios.post(`/User/StartChat?chatName=${encodeURIComponent(chatName)}`, {}, {
-        headers: { Authorization: `Bearer ${state.token}` },
-      });
-      const chatId = response.data.chatId;
-      const newChat = {
-        id: chatId,
-        chatName: chatName || `Chat ${chatId.slice(-6)}`,
-        messages: [],
-      };
-      const updatedChats = [...state.chats, newChat];
-      commit('setChats', updatedChats);
-      return chatId;
+      try {
+        console.log('Store creating chat with name:', chatName);
+
+        const response = await axios.post(
+          '/User/StartChat',
+          { chatName: chatName },
+          {
+            headers: { 
+              Authorization: `Bearer ${state.token}`,
+              'Content-Type': 'application/json' 
+            }
+          }
+        );
+        const chatId = response.data.chatId;
+        const newChat = {
+          id: chatId,
+          chatName: chatName,
+          messages: [],
+        };
+        console.log('New chat object:', newChat);
+        const updatedChats = [...state.chats, newChat];
+        commit('setChats', updatedChats);
+        return chatId;
+      } catch (error) {
+        console.error('Error creating chat:', error.response ? error.response.data : error.message);
+        throw error;
+      }
     },
     async fetchChatHistory({ commit, state }, chatId) {
       const id = typeof chatId === 'string' ? chatId : chatId.toString(); 
