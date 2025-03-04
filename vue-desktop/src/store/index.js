@@ -115,7 +115,7 @@ export default createStore({
           { headers: { Authorization: `Bearer ${state.token}` } }
         );
         const llmResponse = await axios.post(
-          'http://localhost:1234/v1/chat/completions',
+          'http://67.169.249.206:1234/v1/chat/completions',
           {
             messages: [{ role: 'system', content: '' }, { role: 'user', content: message }],
           },
