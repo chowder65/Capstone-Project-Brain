@@ -1,0 +1,56 @@
+﻿version: '3.8'
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - userapi1
+      - llm
+    networks:
+      - app-network
+
+  userapi1:
+    build:
+      context: ./UserAPI
+      dockerfile: Dockerfile
+    environment:
+      - CONNECTION_STRING=mongodb+srv://mcculley707:Nc211266897@cluster0.o6mpa.mongodb.net/
+      - ASPNETCORE_URLS=http://+:5000
+    ports:
+      - "5001-5010:5000"
+    depends_on:
+      - rabbitmq
+    networks:
+      - app-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    networks:
+      - app-network
+
+  llm:
+    build:
+      context: ./chat-model
+      dockerfile: Dockerfile
+    ports:
+      - "8000-8010:8000"
+    volumes:
+      - ./chat-model/emotion_model:/app/emotion_model
+      - ./chat-model/models:/app/models
+    depends_on:
+      - rabbitmq
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

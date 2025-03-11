@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+pika
+requests
+llama_cpp_python
+torch
+transformers

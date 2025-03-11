@@ -7,3 +7,8 @@ UserAPI/obj/Debug/net8.0/UserAPI.GeneratedMSBuildEditorConfig.editorconfig
 /UserAPI/bin
 /UserAPI/obj
 /.idea/.idea.UserAPI
+./chat-model/emotion_model
+./chat-model/models
+
+/chat-model/emotion_model
+/chat-model/models

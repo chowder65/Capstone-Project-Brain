@@ -7,6 +7,12 @@ using System.Threading.Tasks;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using UserAPI.Models;
+using System.Net.Http;
+using System.Text.Json;
+using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
+using System.Text;
+using System.Text.Json;
 
 namespace UserAPI.Controllers
 {
@@ -14,13 +20,14 @@ namespace UserAPI.Controllers
     {
         private readonly IMongoCollection<Chat> chatCollection;
         private readonly JwtSettings jwtSettings;
+        private static readonly HttpClient httpClient = new HttpClient();
 
         public ChatController(JwtSettings jwtSettings)
         {
             this.jwtSettings = jwtSettings;
             var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
-            var client = new MongoClient(connectionString);
-            var database = client.GetDatabase("ChatAPI");
+            var mongoClient = new MongoClient(connectionString); // For MongoDB
+            var database = mongoClient.GetDatabase("ChatAPI");
             chatCollection = database.GetCollection<Chat>("Chats");
         }
 
@@ -44,10 +51,82 @@ namespace UserAPI.Controllers
             var userEmail = ValidateToken(token);
             var filter = Builders<Chat>.Filter.And(
                 Builders<Chat>.Filter.Eq(c => c.Id, chatId),
-                Builders<Chat>.Filter.Eq(c => c.UserEmail, userEmail) 
+                Builders<Chat>.Filter.Eq(c => c.UserEmail, userEmail)
             );
-            var update = Builders<Chat>.Update.Push(c => c.Messages, new Message(messageText));
+
+            var userMessage = new Message(messageText);
+            var update = Builders<Chat>.Update.Push(c => c.Messages, userMessage);
             await chatCollection.UpdateOneAsync(filter, update);
+            Console.WriteLine($"Message added to chat: {messageText}");
+        }
+
+        public async Task<LLMResponse> SendMessageWithLLM(string chatId, ChatRequestBody chatRequest, string token)
+{
+    try
+    {
+        var userEmail = ValidateToken(token);
+        var filter = Builders<Chat>.Filter.And(
+            Builders<Chat>.Filter.Eq(c => c.Id, chatId),
+            Builders<Chat>.Filter.Eq(c => c.UserEmail, userEmail)
+        );
+
+        var userMessage = new Message(chatRequest.new_message);
+        var update = Builders<Chat>.Update.Push(c => c.Messages, userMessage);
+        await chatCollection.UpdateOneAsync(filter, update);
+        Console.WriteLine($"User message added: {chatRequest.new_message}");
+
+        var factory = new ConnectionFactory { HostName = "rabbitmq", UserName = "guest", Password = "guest" };
+        using var connection = factory.CreateConnection();
+        using var channel = connection.CreateModel();
+
+        channel.QueueDeclare(queue: "llm_queue", durable: true, exclusive: false, autoDelete: false, arguments: null);
+        var replyQueue = channel.QueueDeclare(durable: false, exclusive: true, autoDelete: true).QueueName;
+        var correlationId = Guid.NewGuid().ToString();
+
+        var consumer = new EventingBasicConsumer(channel);
+        var tcs = new TaskCompletionSource<string>();
+        consumer.Received += (sender, ea) =>
+        {
+            if (ea.BasicProperties.CorrelationId == correlationId)
+            {
+                var response = Encoding.UTF8.GetString(ea.Body.ToArray());
+                Console.WriteLine($"Received LLM response: {response}");
+                tcs.TrySetResult(response);
+            }
+        };
+        channel.BasicConsume(queue: replyQueue, autoAck: true, consumer: consumer);
+
+        var props = channel.CreateBasicProperties();
+        props.ReplyTo = replyQueue;
+        props.CorrelationId = correlationId;
+        var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(chatRequest));
+        channel.BasicPublish(exchange: "", routingKey: "llm_queue", basicProperties: props, body: body);
+        Console.WriteLine($"Message published to RabbitMQ with CorrelationId: {correlationId}");
+
+        var llmResponseTask = await Task.WhenAny(tcs.Task, Task.Delay(10000));
+        if (llmResponseTask == tcs.Task)
+        {
+            var jsonResponse = tcs.Task.Result;
+            var llmResponse = JsonSerializer.Deserialize<LLMResponse>(jsonResponse);
+            var aiMessageObj = new Message(llmResponse.Response);
+            update = Builders<Chat>.Update.Push(c => c.Messages, aiMessageObj);
+            await chatCollection.UpdateOneAsync(filter, update);
+            Console.WriteLine($"LLM response added to MongoDB: {llmResponse.Response}");
+            return llmResponse;
+        }
+        throw new TimeoutException("LLM response timed out after 10 seconds");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error in SendMessageWithLLM: {ex.Message}");
+        throw;
+    }
+}
+
+        public class LLMResponse
+        {
+            public string Response { get; set; }
+            public string DetectedEmotion { get; set; }
         }
 
         public async Task<Chat> GetChatHistory(string chatId, string token)
@@ -55,7 +134,7 @@ namespace UserAPI.Controllers
             var userEmail = ValidateToken(token);
             var filter = Builders<Chat>.Filter.And(
                 Builders<Chat>.Filter.Eq(c => c.Id, chatId),
-                Builders<Chat>.Filter.Eq(c => c.UserEmail, userEmail) 
+                Builders<Chat>.Filter.Eq(c => c.UserEmail, userEmail)
             );
             return await chatCollection.Find(filter).FirstOrDefaultAsync();
         }
@@ -70,7 +149,7 @@ namespace UserAPI.Controllers
         {
             var filter = Builders<Chat>.Filter.And(
                 Builders<Chat>.Filter.Eq(c => c.Id, chatId),
-                Builders<Chat>.Filter.Eq(c => c.UserEmail, userEmail) 
+                Builders<Chat>.Filter.Eq(c => c.UserEmail, userEmail)
             );
             await chatCollection.DeleteOneAsync(filter);
         }
@@ -103,7 +182,6 @@ namespace UserAPI.Controllers
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(jwtSettings.Secret);
-
             try
             {
                 var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
@@ -128,5 +206,18 @@ namespace UserAPI.Controllers
                 throw new UnauthorizedAccessException("Invalid or expired token.");
             }
         }
+    }
+
+    public class ChatRequestBody
+    {
+        public string prompt { get; set; }
+        public List<PastMessageBody> past_messages { get; set; }
+        public string new_message { get; set; }
+    }
+
+    public class PastMessageBody
+    {
+        public string user { get; set; }
+        public string assistant { get; set; }
     }
 }

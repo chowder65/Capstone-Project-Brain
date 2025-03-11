@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "CXQ5FFFY5wc=",
+  "dgSpecHash": "IxuFK7a2e0s=",
   "success": true,
   "projectFilePath": "C:\\Users\\mccul\\Documents\\GitHub\\Capstone-Project-Brain\\UserAPI\\UserAPI.csproj",
   "expectedPackageFiles": [
@@ -29,6 +29,8 @@
     "C:\\Users\\mccul\\.nuget\\packages\\mongodb.bson\\3.1.0\\mongodb.bson.3.1.0.nupkg.sha512",
     "C:\\Users\\mccul\\.nuget\\packages\\mongodb.driver\\3.1.0\\mongodb.driver.3.1.0.nupkg.sha512",
     "C:\\Users\\mccul\\.nuget\\packages\\netstandard.library\\1.6.1\\netstandard.library.1.6.1.nupkg.sha512",
+    "C:\\Users\\mccul\\.nuget\\packages\\newtonsoft.json\\13.0.3\\newtonsoft.json.13.0.3.nupkg.sha512",
+    "C:\\Users\\mccul\\.nuget\\packages\\rabbitmq.client\\6.8.1\\rabbitmq.client.6.8.1.nupkg.sha512",
     "C:\\Users\\mccul\\.nuget\\packages\\runtime.debian.8-x64.runtime.native.system.security.cryptography.openssl\\4.3.2\\runtime.debian.8-x64.runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",
     "C:\\Users\\mccul\\.nuget\\packages\\runtime.fedora.23-x64.runtime.native.system.security.cryptography.openssl\\4.3.2\\runtime.fedora.23-x64.runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",
     "C:\\Users\\mccul\\.nuget\\packages\\runtime.fedora.24-x64.runtime.native.system.security.cryptography.openssl\\4.3.2\\runtime.fedora.24-x64.runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",
@@ -106,6 +108,7 @@
     "C:\\Users\\mccul\\.nuget\\packages\\system.text.encoding.extensions\\4.3.0\\system.text.encoding.extensions.4.3.0.nupkg.sha512",
     "C:\\Users\\mccul\\.nuget\\packages\\system.text.regularexpressions\\4.3.1\\system.text.regularexpressions.4.3.1.nupkg.sha512",
     "C:\\Users\\mccul\\.nuget\\packages\\system.threading\\4.3.0\\system.threading.4.3.0.nupkg.sha512",
+    "C:\\Users\\mccul\\.nuget\\packages\\system.threading.channels\\7.0.0\\system.threading.channels.7.0.0.nupkg.sha512",
     "C:\\Users\\mccul\\.nuget\\packages\\system.threading.tasks\\4.3.0\\system.threading.tasks.4.3.0.nupkg.sha512",
     "C:\\Users\\mccul\\.nuget\\packages\\system.threading.tasks.extensions\\4.3.0\\system.threading.tasks.extensions.4.3.0.nupkg.sha512",
     "C:\\Users\\mccul\\.nuget\\packages\\system.threading.timer\\4.3.0\\system.threading.timer.4.3.0.nupkg.sha512",
