@@ -10,15 +10,15 @@ namespace UserAPI.Controllers;
 
 public class UserController
 {
-    private readonly IMongoCollection<User> collection;
+    private readonly IMongoCollection<Account> collection;
     private readonly JwtSettings jwtSettings;
 
     public UserController(JwtSettings jwtSettings)
     {
         this.jwtSettings = jwtSettings;
-        var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
+        var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING") ?? "mongodb://localhost:27017";
         var client = new MongoClient(connectionString);
-        collection = client.GetDatabase("UserAPI").GetCollection<User>("Users");
+        collection = client.GetDatabase("UserAPI").GetCollection<Account>("Users");
     }
 
     public string HashPassword(string password)
@@ -26,61 +26,40 @@ public class UserController
         return BCrypt.Net.BCrypt.HashPassword(password);
     }
 
-    public async Task CreateUser(User user)
+    public async Task<string> CreateUser(Account user)
     {
+        user.Id = ObjectId.GenerateNewId().ToString();
         user.Password = HashPassword(user.Password);
-        user.Id = ObjectId.GenerateNewId();
+        user.Role = "User";
         await collection.InsertOneAsync(user);
+        return GenerateJwtToken(user);
     }
 
-    public async Task<User?> GetUser(string email)
+    public async Task<Account?> GetUser(string email)
     {
-        var filter = Builders<User>.Filter.Eq("Email", email);
+        var filter = Builders<Account>.Filter.Eq(a => a.Email, email);
         return await collection.Find(filter).FirstOrDefaultAsync();
     }
 
-    public async Task<string> LogIn(string email, string password)
+    public async Task<string?> LogIn(string email, string password)
     {
-        Console.WriteLine($"Login attempt for email: {email}");
-
-        var claims = new List<Claim>
+        var user = await GetUser(email);
+        if (user != null && BCrypt.Net.BCrypt.Verify(password, user.Password) && user.Role == "User")
         {
-            new Claim(ClaimTypes.Email, email),
-        };
-
-        var key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtSettings.Secret));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
-
-        var tokenDescriptor = new SecurityTokenDescriptor
-        {
-            Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddHours(1),
-            Issuer = jwtSettings.Issuer,
-            Audience = jwtSettings.Audience,
-            SigningCredentials = creds
-        };
-
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-        var tokenString = tokenHandler.WriteToken(token);
-
-        Console.WriteLine($"Generated token for {email}: {tokenString}");
-        return tokenString;
+            return GenerateJwtToken(user);
+        }
+        Console.WriteLine($"User login failed for {email}");
+        return null;
     }
 
     public async Task<bool> ChangePassword(string id, string newPassword, string token)
     {
         var userIdFromToken = ValidateToken(token);
-
         if (userIdFromToken != id)
-        {
-            throw new UnauthorizedAccessException("You are not authorized to change this password.");
-        }
+            throw new UnauthorizedAccessException("Unauthorized to change this password.");
 
-        var objectId = ObjectId.Parse(id);
-        var filter = Builders<User>.Filter.Eq(u => u.Id, objectId);
-        var hashedPassword = HashPassword(newPassword);
-        var update = Builders<User>.Update.Set(u => u.Password, hashedPassword);
+        var filter = Builders<Account>.Filter.Eq(u => u.Id, id); // Use string directly
+        var update = Builders<Account>.Update.Set(u => u.Password, HashPassword(newPassword));
         var result = await collection.UpdateOneAsync(filter, update);
         return result.ModifiedCount > 0;
     }
@@ -88,41 +67,33 @@ public class UserController
     public async Task DeleteUser(string email, string password, string token)
     {
         var userIdFromToken = ValidateToken(token);
-
         var user = await GetUser(email);
         if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.Password))
-        {
             throw new UnauthorizedAccessException("Invalid email or password.");
-        }
+        if (user.Id != userIdFromToken)
+            throw new UnauthorizedAccessException("Unauthorized to delete this user.");
 
-        if (user.Id.ToString() != userIdFromToken)
-        {
-            throw new UnauthorizedAccessException("You are not authorized to delete this user.");
-        }
-
-        var filter = Builders<User>.Filter.Eq(u => u.Id, user.Id);
+        var filter = Builders<Account>.Filter.Eq(u => u.Id, user.Id); // Use string directly
         await collection.DeleteOneAsync(filter);
     }
 
-
-    private string GenerateJwtToken(User user)
+    private string GenerateJwtToken(Account user)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(jwtSettings.Secret);
-
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.Email)
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role)
             }),
             Expires = DateTime.UtcNow.AddMinutes(jwtSettings.ExpirationInMinutes),
             Issuer = jwtSettings.Issuer,
             Audience = jwtSettings.Audience,
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
-
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
     }
@@ -131,25 +102,16 @@ public class UserController
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(jwtSettings.Secret);
-
-        try
+        var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
         {
-            var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(key),
-                ValidateIssuer = true,
-                ValidIssuer = jwtSettings.Issuer,
-                ValidateAudience = true,
-                ValidAudience = jwtSettings.Audience,
-                ValidateLifetime = true
-            }, out SecurityToken validatedToken);
-
-            return principal.FindFirstValue(ClaimTypes.NameIdentifier);
-        }
-        catch (Exception)
-        {
-            throw new UnauthorizedAccessException("Invalid or expired token.");
-        }
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = true,
+            ValidIssuer = jwtSettings.Issuer,
+            ValidateAudience = true,
+            ValidAudience = jwtSettings.Audience,
+            ValidateLifetime = true
+        }, out _);
+        return principal.FindFirstValue(ClaimTypes.NameIdentifier);
     }
 }

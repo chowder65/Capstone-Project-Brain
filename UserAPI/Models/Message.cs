@@ -5,15 +5,12 @@ namespace UserAPI.Models;
 
 public class Message
 {
-    [BsonElement("text")]
     public string Text { get; set; }
-
-    [BsonElement("timestamp")]
-    public DateTime Timestamp { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public bool IsUser { get; set; }
 
     public Message(string text)
     {
         Text = text;
-        Timestamp = DateTime.UtcNow;
     }
 }

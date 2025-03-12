@@ -10,20 +10,17 @@ namespace AdminAPI.Controllers;
 
 public class AdminController
 {
-    private readonly IMongoCollection<Admin> adminCollection;
-    private readonly IMongoCollection<User> userCollection;
+    private readonly IMongoCollection<Account> adminCollection;
     private readonly IMongoCollection<Chat> chatCollection;
     private readonly JwtSettings jwtSettings;
 
     public AdminController(JwtSettings jwtSettings)
     {
         this.jwtSettings = jwtSettings;
-        var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
+        var connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING") ?? "mongodb://localhost:27017";
         var client = new MongoClient(connectionString);
-        var database = client.GetDatabase("AdminAPI");
-        adminCollection = database.GetCollection<Admin>("Admins");
-        userCollection = database.GetCollection<User>("Users");
-        chatCollection = database.GetCollection<Chat>("Chats");
+        adminCollection = client.GetDatabase("AdminAPI").GetCollection<Account>("Admins");
+        chatCollection = client.GetDatabase("UserAPI").GetCollection<Chat>("Chats"); // Fixed typo from Account to Chat
     }
 
     public string HashPassword(string password)
@@ -31,122 +28,114 @@ public class AdminController
         return BCrypt.Net.BCrypt.HashPassword(password);
     }
 
-    public async Task CreateAdmin(Admin admin)
+    public async Task CreateAdmin(Account admin)
     {
-        admin.Id = ObjectId.GenerateNewId();
+        admin.Id = ObjectId.GenerateNewId().ToString();
         admin.Password = HashPassword(admin.Password);
+        admin.Role = "Admin";
         await adminCollection.InsertOneAsync(admin);
     }
 
-    public async Task<Admin?> GetAdmin(string userName)
+    public async Task<Account?> GetAdmin(string email)
     {
-        var filter = Builders<Admin>.Filter.Eq("UserName", userName);
+        var filter = Builders<Account>.Filter.Eq(a => a.Email, email);
         return await adminCollection.Find(filter).FirstOrDefaultAsync();
     }
 
-    public async Task<string?> LogIn(string userName, string password)
+    public async Task<string> LogIn(string email, string password)
     {
-        var admin = await GetAdmin(userName);
-        password = password.Trim();
-        if (admin != null)
+        Console.WriteLine($"AdminController.LogIn called with email: {email}");
+        var admin = await adminCollection.Find(a => a.Email == email).FirstOrDefaultAsync();
+        if (admin == null)
         {
-            Console.WriteLine($"Input Password: {password}");
-            Console.WriteLine($"Stored Password: {admin.Password}");
-            Console.WriteLine($"Password Match: {BCrypt.Net.BCrypt.Verify(password, admin.Password)}");
-
-            if (BCrypt.Net.BCrypt.Verify(password, admin.Password))
-            {
-                return GenerateJwtToken(admin);
-            }
+            Console.WriteLine($"No admin found for {email}");
+            return null;
         }
-        return null;
-    }
-    public async Task<bool> ChangePassword(string id, string newPassword, string token)
-    {
-        var adminIdFromToken = ValidateToken(token);
-
-        if (adminIdFromToken != id)
+        Console.WriteLine($"Found admin: {admin.Email}, Role: {admin.Role}");
+        if (admin.Role != "Admin" || !BCrypt.Net.BCrypt.Verify(password, admin.Password))
         {
-            throw new UnauthorizedAccessException("You are not authorized to change this password.");
+            Console.WriteLine($"Invalid role or password for {email}");
+            return null;
         }
-
-        var objectId = ObjectId.Parse(id);
-        var filter = Builders<Admin>.Filter.Eq(a => a.Id, objectId);
-        var hashedPassword = HashPassword(newPassword);
-        var update = Builders<Admin>.Update.Set(a => a.Password, hashedPassword);
-        var result = await adminCollection.UpdateOneAsync(filter, update);
-        return result.ModifiedCount > 0;
+        var token = GenerateJwtToken(admin);
+        Console.WriteLine($"Generated token: {token}");
+        return token;
     }
 
-    public async Task DeleteAdmin(string username, string password, string token)
+    public async Task DeleteChat(string chatId, string userEmail, string token)
     {
-        var adminIdFromToken = ValidateToken(token);
-
-        var admin = await GetAdmin(username);
-        if (admin == null || !BCrypt.Net.BCrypt.Verify(password, admin.Password))
-        {
-            throw new UnauthorizedAccessException("Invalid username or password.");
-        }
-
-        if (admin.Id.ToString() != adminIdFromToken)
-        {
-            throw new UnauthorizedAccessException("You are not authorized to delete this admin.");
-        }
-
-        var filter = Builders<Admin>.Filter.Eq(a => a.Id, admin.Id);
-        await adminCollection.DeleteOneAsync(filter);
+        ValidateAdminToken(token);
+        var chatFilter = Builders<Chat>.Filter.Eq(c => c.Id, ObjectId.Parse(chatId));
+        var chat = await chatCollection.Find(chatFilter).FirstOrDefaultAsync();
+        if (chat == null || chat.UserEmail != userEmail)
+            throw new Exception("Chat not found or user mismatch");
+        await chatCollection.DeleteOneAsync(chatFilter);
     }
 
     public async Task DeleteUser(string userId, string token)
     {
         ValidateAdminToken(token);
+        var userFilter = Builders<Account>.Filter.Eq(a => a.Id, userId); // Use string directly
 
-        var objectId = ObjectId.Parse(userId);
-        var filter = Builders<User>.Filter.Eq(u => u.Id, objectId);
-        await userCollection.DeleteOneAsync(filter);
+        var user = await adminCollection.Find(userFilter).FirstOrDefaultAsync();
+        if (user != null)
+        {
+            await adminCollection.DeleteOneAsync(userFilter);
+        }
+        else
+        {
+            var userCollection = adminCollection.Database.Client.GetDatabase("UserAPI").GetCollection<Account>("Users");
+            user = await userCollection.Find(userFilter).FirstOrDefaultAsync();
+            if (user != null)
+            {
+                await userCollection.DeleteOneAsync(userFilter);
+            }
+        }
+
+        if (user != null)
+        {
+            var chatFilter = Builders<Chat>.Filter.Eq(c => c.UserEmail, user.Email);
+            await chatCollection.DeleteManyAsync(chatFilter);
+        }
     }
 
-    public async Task<User?> GetUser(string userId, string token)
+    public async Task<List<Chat>> GetUserChats(string userEmail, string token)
     {
         ValidateAdminToken(token);
-
-        var objectId = ObjectId.Parse(userId);
-        var filter = Builders<User>.Filter.Eq(u => u.Id, objectId);
-        return await userCollection.Find(filter).FirstOrDefaultAsync();
+        var filter = Builders<Chat>.Filter.Eq(c => c.UserEmail, userEmail);
+        return await chatCollection.Find(filter).ToListAsync();
     }
 
-    public async Task<bool> UpdateUser(string userId, User updatedUser, string token)
+    public async Task<List<Account>> GetAllUsers(string token)
     {
         ValidateAdminToken(token);
+        var adminUsers = await adminCollection.Find(Builders<Account>.Filter.Empty).ToListAsync();
+        var userCollection = adminCollection.Database.Client.GetDatabase("UserAPI").GetCollection<Account>("Users");
+        var regularUsers = await userCollection.Find(Builders<Account>.Filter.Empty).ToListAsync();
 
-        var objectId = ObjectId.Parse(userId);
-        var filter = Builders<User>.Filter.Eq(u => u.Id, objectId);
-        var update = Builders<User>.Update
-            .Set(u => u.Email, updatedUser.Email)
-            .Set(u => u.Password, HashPassword(updatedUser.Password));
-        var result = await userCollection.UpdateOneAsync(filter, update);
-        return result.ModifiedCount > 0;
+        var allUsers = new List<Account>();
+        allUsers.AddRange(adminUsers);
+        allUsers.AddRange(regularUsers);
+        return allUsers;
     }
 
-    private string GenerateJwtToken(Admin admin)
+    private string GenerateJwtToken(Account account)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(jwtSettings.Secret);
-
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, admin.Id.ToString()),
-                new Claim(ClaimTypes.Name, admin.UserName),
-                new Claim(ClaimTypes.Role, "Admin") 
+                new Claim(ClaimTypes.NameIdentifier, account.Id),
+                new Claim(ClaimTypes.Email, account.Email),
+                new Claim(ClaimTypes.Role, account.Role)
             }),
             Expires = DateTime.UtcNow.AddMinutes(jwtSettings.ExpirationInMinutes),
             Issuer = jwtSettings.Issuer,
             Audience = jwtSettings.Audience,
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
         };
-
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
     }
@@ -155,55 +144,35 @@ public class AdminController
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(jwtSettings.Secret);
-
-        try
+        var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
         {
-            var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(key),
-                ValidateIssuer = true,
-                ValidIssuer = jwtSettings.Issuer,
-                ValidateAudience = true,
-                ValidAudience = jwtSettings.Audience,
-                ValidateLifetime = true
-            }, out SecurityToken validatedToken);
-
-            return principal.FindFirstValue(ClaimTypes.NameIdentifier);
-        }
-        catch (Exception)
-        {
-            throw new UnauthorizedAccessException("Invalid or expired token.");
-        }
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = true,
+            ValidIssuer = jwtSettings.Issuer,
+            ValidateAudience = true,
+            ValidAudience = jwtSettings.Audience,
+            ValidateLifetime = true
+        }, out _);
+        return principal.FindFirstValue(ClaimTypes.NameIdentifier);
     }
 
-    internal void ValidateAdminToken(string token)
+    public void ValidateAdminToken(string token)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(jwtSettings.Secret);
-
-        try
+        var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
         {
-            var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(key),
-                ValidateIssuer = true,
-                ValidIssuer = jwtSettings.Issuer,
-                ValidateAudience = true,
-                ValidAudience = jwtSettings.Audience,
-                ValidateLifetime = true
-            }, out SecurityToken validatedToken);
-
-            var role = principal.FindFirstValue(ClaimTypes.Role);
-            if (role != "Admin")
-            {
-                throw new UnauthorizedAccessException("You are not authorized to perform this action.");
-            }
-        }
-        catch (Exception)
-        {
-            throw new UnauthorizedAccessException("Invalid or expired token.");
-        }
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = true,
+            ValidIssuer = jwtSettings.Issuer,
+            ValidateAudience = true,
+            ValidAudience = jwtSettings.Audience,
+            ValidateLifetime = true
+        }, out _);
+        var role = principal.FindFirstValue(ClaimTypes.Role);
+        if (role != "Admin")
+            throw new UnauthorizedAccessException("Admin privileges required.");
     }
 }
